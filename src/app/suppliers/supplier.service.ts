@@ -2,7 +2,15 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import { throwError, Observable, of } from 'rxjs';
-import { concatMap, map, mergeMap, switchMap, tap } from 'rxjs/operators';
+import {
+  catchError,
+  concatMap,
+  map,
+  mergeMap,
+  shareReplay,
+  switchMap,
+  tap,
+} from 'rxjs/operators';
 import { Supplier } from './supplier';
 
 @Injectable({
@@ -11,7 +19,13 @@ import { Supplier } from './supplier';
 export class SupplierService {
   suppliersUrl = 'api/suppliers';
 
-  // of is used in this case to muck up a list of supplier id's
+  suppliers$ = this.http.get<Supplier[]>(this.suppliersUrl).pipe(
+    tap((data) => console.log('suppliers', JSON.stringify(data))),
+    shareReplay(1),
+    catchError(this.handleError)
+  );
+
+  // of is used in this case to mock up a list of supplier id's
   suppliersWithMap$ = of(1, 5, 8).pipe(
     map((id) => this.http.get<Supplier>(`${this.suppliersUrl}/${id}`))
   );
