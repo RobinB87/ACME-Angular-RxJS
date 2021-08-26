@@ -4,16 +4,28 @@ import { HttpClient } from '@angular/common/http';
 import {
   BehaviorSubject,
   combineLatest,
+  from,
   merge,
   Observable,
   Subject,
   throwError,
 } from 'rxjs';
-import { catchError, map, scan, shareReplay, tap } from 'rxjs/operators';
+import {
+  catchError,
+  filter,
+  map,
+  mergeMap,
+  scan,
+  shareReplay,
+  switchMap,
+  tap,
+  toArray,
+} from 'rxjs/operators';
 
 import { Product } from './product';
 import { SupplierService } from '../suppliers/supplier.service';
 import { ProductCategoryService } from './../product-categories/product-category.service';
+import { Supplier } from '../suppliers/supplier';
 
 @Injectable({
   providedIn: 'root',
@@ -82,13 +94,35 @@ export class ProductService {
   ).pipe(scan((acc: Product[], value: Product) => [...acc, value]));
 
   // Related data streams: Get It All approach
-  selectedProductSuppliers$ = combineLatest([
-    this.selectedProduct$,
-    this.supplierService.suppliers$,
-  ]).pipe(
-    map(([selectedProduct, suppliers]) =>
-      suppliers.filter((supplier) =>
-        selectedProduct.supplierIds.includes(supplier.id)
+  // selectedProductSuppliers$ = combineLatest([
+  //   this.selectedProduct$,
+  //   this.supplierService.suppliers$,
+  // ]).pipe(
+  //   map(([selectedProduct, suppliers]) =>
+  //     suppliers.filter((supplier) =>
+  //       selectedProduct.supplierIds.includes(supplier.id)
+  //     )
+  //   )
+  // );
+
+  // Related data streams: Just In Time approach
+  selectedProductSuppliers$ = this.selectedProduct$.pipe(
+    // the filter ensures the rest of the process is skipped when selectedProduct is undefined or null
+    // eg when the page is just displayed
+    filter((selectedProduct) => Boolean(selectedProduct)),
+    // use switchMap instead of mergeMap here
+    // so only data for the latest selected product is retrieved
+    // eg: when user clicks several products, you ensure data is only retrieved for the final click
+    switchMap((selectedProduct) =>
+      from(selectedProduct.supplierIds).pipe(
+        // here you keep mergeMap, as you want to retrieve all suppliers for this product
+        mergeMap((supplierId) =>
+          this.http.get<Supplier>(`${this.suppliersUrl}/${supplierId}`)
+        ),
+        toArray(),
+        tap((suppliers) =>
+          console.log('product suppliers', JSON.stringify(suppliers))
+        )
       )
     )
   );
