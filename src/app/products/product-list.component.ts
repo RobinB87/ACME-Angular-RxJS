@@ -23,7 +23,7 @@ export class ProductListComponent {
   // or use a BehaviorSubject<number>(0)
   // when you need to start the stream with a default value
   products$ = combineLatest([
-    this.productService.productsWithCategory$,
+    this.productService.productsWithAdd$,
     this.categorySelectedActions$,
   ]).pipe(
     map(([products, selectedCategoryId]) =>
@@ -50,7 +50,7 @@ export class ProductListComponent {
   ) {}
 
   onAdd(): void {
-    console.log('Not yet implemented');
+    this.productService.addProduct();
   }
 
   onSelected(categoryId: string): void {
