@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
-import { EMPTY } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, EMPTY, Subject } from 'rxjs';
+import { catchError, map, startWith } from 'rxjs/operators';
 
 import { ProductService } from './product.service';
 import { ProductCategoryService } from './../product-categories/product-category.service';
@@ -12,9 +12,24 @@ import { ProductCategoryService } from './../product-categories/product-category
 export class ProductListComponent {
   pageTitle = 'Product List';
   errorMessage = '';
-  selectedCategoryId = 1;
 
-  products$ = this.productService.productsWithCategory$.pipe(
+  private categorySelectedSubject = new BehaviorSubject<number>(0);
+  categorySelectedActions$ = this.categorySelectedSubject.asObservable();
+
+  // CombineLatest does not emit, until each input stream emits
+  // Hence, in this case the products are not shown when the page is initialized
+  // You can use: this.categorySelectedActions$.pipe(startWith(...) . startWith(0) in this case
+  // or use a BehaviorSubject<number>(0)
+  // when you need to start the stream with a default value
+  products$ = combineLatest([
+    this.productService.productsWithCategory$,
+    this.categorySelectedActions$,
+  ]).pipe(
+    map(([products, selectedCategoryId]) =>
+      products.filter((product) =>
+        selectedCategoryId ? product.categoryId === selectedCategoryId : true
+      )
+    ),
     catchError((err) => {
       this.errorMessage = err;
       return EMPTY;
@@ -28,16 +43,6 @@ export class ProductListComponent {
     })
   );
 
-  productSimpleFilter$ = this.productService.productsWithCategory$.pipe(
-    map((products) =>
-      products.filter((product) =>
-        this.selectedCategoryId
-          ? product.categoryId === this.selectedCategoryId
-          : true
-      )
-    )
-  );
-
   constructor(
     private productService: ProductService,
     private productCategoryService: ProductCategoryService
@@ -48,6 +53,6 @@ export class ProductListComponent {
   }
 
   onSelected(categoryId: string): void {
-    this.selectedCategoryId = +categoryId;
+    this.categorySelectedSubject.next(+categoryId);
   }
 }
