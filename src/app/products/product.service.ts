@@ -94,6 +94,10 @@ export class ProductService {
   ).pipe(scan((acc: Product[], value: Product) => [...acc, value]));
 
   // Related data streams: Get It All approach
+  // Combine streams
+  // Display: instantly
+  // Gets ALL data
+
   // selectedProductSuppliers$ = combineLatest([
   //   this.selectedProduct$,
   //   this.supplierService.suppliers$,
@@ -106,6 +110,10 @@ export class ProductService {
   // );
 
   // Related data streams: Just In Time approach
+  // Not combine streams, but higher order mapping operators
+  // Display: delayed
+  // Gets only required data
+
   selectedProductSuppliers$ = this.selectedProduct$.pipe(
     // the filter ensures the rest of the process is skipped when selectedProduct is undefined or null
     // eg when the page is just displayed
