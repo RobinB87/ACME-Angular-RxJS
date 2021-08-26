@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { EMPTY } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 
 import { ProductService } from './product.service';
 
@@ -12,12 +12,23 @@ export class ProductListComponent {
   pageTitle = 'Product List';
   errorMessage = '';
   categories;
+  selectedCategoryId = 1;
 
   products$ = this.productService.productsWithCategory$.pipe(
     catchError((err) => {
       this.errorMessage = err;
       return EMPTY;
     })
+  );
+
+  productSimpleFilter$ = this.productService.productsWithCategory$.pipe(
+    map((products) =>
+      products.filter((product) =>
+        this.selectedCategoryId
+          ? product.categoryId === this.selectedCategoryId
+          : true
+      )
+    )
   );
 
   constructor(private productService: ProductService) {}
